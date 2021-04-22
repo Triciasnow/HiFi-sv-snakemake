@@ -1,0 +1,9 @@
+#samples
+samples: 'VF36'
+reference: 'SL'
+aligners: 'NGMLR pbmm2'
+depth: 30
+trf_para: '2 7 7 80 10 50 2000 -l 6 -d'
+nucmer_para: '-l 100 -c 500'
+svim_qual: 7
+assemblytics_anno: 'Assemblytics_vcfanno'

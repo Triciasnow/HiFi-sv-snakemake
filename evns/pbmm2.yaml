@@ -1,0 +1,6 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - pbmm2=1.1.0
+  - samtools=1.9
