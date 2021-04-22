@@ -1,0 +1,27 @@
+##fileformat=VCFv4.3
+##fileDate=20210227
+##source=Assemblytics
+##ALT=<ID=INV,Description="Inversion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INS,Description="Insertion in non-reference genome">
+##ALT=<ID=DEL,Description="Deletion in non-reference genome">
+##ALT=<ID=CNV,Description="Copy number variable region">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position on reference genome">
+##INFO=<ID=CHR2,Number=1,Type=String,Description="Chromoosme ID on the non-reference genome">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##contig=<ID=0,length=9643250>
+##contig=<ID=1,length=90863682>
+##contig=<ID=10,length=64792705>
+##contig=<ID=11,length=54379777>
+##contig=<ID=12,length=66688036>
+##contig=<ID=2,length=53473368>
+##contig=<ID=3,length=65298490>
+##contig=<ID=4,length=64459972>
+##contig=<ID=5,length=65269487>
+##contig=<ID=6,length=47258699>
+##contig=<ID=7,length=67883646>
+##contig=<ID=8,length=63995357>
+##contig=<ID=9,length=68513564>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO    FORMAT  Assemblytics
