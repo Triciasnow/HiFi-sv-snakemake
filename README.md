@@ -53,6 +53,12 @@ snakemake --configfile config.yaml --cores 5 --use-conda call_filter_all
 ```
 snakemake --configfile config.yaml --cores 16 --use-conda final_results_all
 ```
+In this pipeline, we defined:<br>
+    Insertion: detected by `NGMLR`+`pbmm2`-`SVIM`;<br>
+    Deletion: detected by `NGMLR`+`pbmm2`-`Sniffles` and `Assemblytics`;<br>
+    Inversion: detected by `NGMLR`-`cuteSV`+`Sniffles`;<br>
+    Duplication: detected by `pbmm2`-`pbsv`+`cuteSV`;<br>
+    Tranlocation: detedcted by `NGMLR`+`pbmm2`-`pbsv`+`Sniffles`+`cuteSV` and `SyRI`.
 
 ## Overview of the workflow
 We can easily visualize the workflow with [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html).
