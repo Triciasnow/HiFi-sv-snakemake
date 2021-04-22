@@ -59,12 +59,12 @@ We can easily visualize the workflow with [Snakemake](https://snakemake.readthed
 
 ### Rule graph
 ```
-snakemake -n --configfile config.yaml --dag | dot -Tpdf > dag.pdf
+snakemake -n --configfile config.yaml --dag | dot -Tpdf > rulegrph.pdf
 ```
 ![](imgs/rulegrph.pdf)
 
 ### DAG of jobs
 ```
-snakemake --rulegraph --configfile config.yaml |dot -Tpdf > rule.pdf
+snakemake --rulegraph --configfile config.yaml |dot -Tpdf > DAGgraph.pdf
 ```
 ![](imgs/DAGgraph.pdf)
