@@ -224,9 +224,11 @@ rule cuteSV_call:
         'logs/{sample}-{aligner}.cuteSV.log.txt'
     params:
         map_name=config['aligners']
+        work_dir='{sample}/cuteSV/{sample}-{aligner}_tmp'
     conda: "./evn/cutesv.yaml"
     shell:
-        '(cuteSV {input} {output} --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5 --threads {threads} --sample {wildcards.sample}-{params.map_name} --min_support 10 --genotype) 2> {log}'
+        'mkdir {params.work_dir}' \
+        '(cuteSV {input} {output} {params.work_dir} --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5 --threads {threads} --sample {wildcards.sample}-{params.map_name} --min_support 10 --genotype) 2> {log}'
 
 ## sv calling by software which based on genoem alignment
 # calling by Assemblytics
