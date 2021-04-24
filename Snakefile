@@ -253,13 +253,17 @@ rule SyRI_call:
         bam='{sample}-minimap2.bam',
         asm=expand('{sample}.fa',sample=SAMPLES)
     output:
-        '{sample}/SyRI/{sample}.SyRI.vcf'
+        ref_chr='{genome}.rechr.fa'
+        vcf='{sample}/SyRI/{sample}.SyRI.vcf'
     threads: 2
     conda: "./evn/syri.yaml"
+    params:
+        max_chr=config['Chrs_ref']
     log:
         'logs/{sample}.SyRI.log.txt'
     shell:
-        '(syri -c {input.bam} -r {input.ref} -q {input.asm} -k -F B --nosnp) 2> {log}' \
+        'python ref_chr.py -i {input.ref} -o {output.ref_chr} -c {params.max_chr}' \
+        '(syri -c {input.bam} -r {output.ref_chr} -q {input.asm} -k -F B --nosnp) 2> {log}' \
         'mv syri.vcf {output}'
 
 
