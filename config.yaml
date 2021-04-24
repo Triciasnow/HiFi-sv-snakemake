@@ -2,6 +2,7 @@
 samples: 'VF36'
 reference: 'SL'
 aligners: 'NGMLR pbmm2'
+Chrs_ref: '12'
 depth: 30
 trf_para: '2 7 7 80 10 50 2000 -l 6 -d'
 nucmer_para: '-l 100 -c 500'
