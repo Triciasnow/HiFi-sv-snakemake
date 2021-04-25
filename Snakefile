@@ -69,7 +69,7 @@ rule NGMLR_map:
     params:
         para=config['reference']
     shell:
-        '(ngmlr -r {input.ref} -q {input.fq} -t {threads} -x pacbio --rg-sm {wildcards.sample} --rg-lb {params.para} --rg-pl PacBio -o {output}) 2> {log}'
+        'ngmlr -r {input.ref} -q {input.fq} -t {threads} -x pacbio --rg-sm {wildcards.sample} --rg-lb {params.para} --rg-pl PacBio -o {output} 2> {log}'
 # alignment with pbmm2
 rule pbmm2_map:
     input:
@@ -84,7 +84,7 @@ rule pbmm2_map:
     log:
         'logs/{sample}-pbmm2.log.txt'
     shell:
-        "(pbmm2 align {input} {output} --unmapped --preset CCS -N 2 --sort --rg '@RG\\tID:{wildcards.sample}\\tSM:{wildcards.sample}\\tLB:{params.para}\\tPL:PB')' 2> {log}"
+        "pbmm2 align {input} {output} --unmapped --preset CCS -N 2 --sort --rg '@RG\\tID:{wildcards.sample}\\tSM:{wildcards.sample}\\tLB:{params.para}\\tPL:PB' 2> {log}"
 
 
 ## index and sort mapped result
@@ -102,8 +102,8 @@ rule samtools_sort_index:
     log:
         'logs/{sample}-sort_index.log.txt'
     shell:
-        '(samtools sort {input.bam_ngmlr} -o {output.sort_ngmlr} | samtools index) 2> {log}' \
-        '(samtools sort {input.bam_pbmm2} -o {output.sort_pbmm2} | samtools index) 2>> {log}'
+        'samtools sort {input.bam_ngmlr} -o {output.sort_ngmlr} | samtools index 2> {log}' \
+        'samtools sort {input.bam_pbmm2} -o {output.sort_pbmm2} | samtools index 2>> {log}'
 
 
 
@@ -123,8 +123,8 @@ rule MuMmer4_map:
         name=config['reference']
     conda: "./evn/mummer4.yaml"
     shell:
-        '(nucmer --maxmatch {params.para} {input.ref} {input.asm} -p {wildcards.sample}-{params.name} -t {threads}) 2> {log}' \
-        '(mv {wildcards.sample}-{params.name}.delta {output})'
+        'nucmer --maxmatch {params.para} {input.ref} {input.asm} -p {wildcards.sample}-{params.name} -t {threads} 2> {log}' \
+        'mv {wildcards.sample}-{params.name}.delta {output}'
 
 # alignment with minimap2:
 rule minimap2_map:
@@ -139,7 +139,7 @@ rule minimap2_map:
     log:
         'logs/{sample}-minimap2.log.txt'
     shell:
-        '(minimap2 -ax asm5 --eqx {input.ref} {input.asm} > {output.sam} | samtools view -b -o {output.bam}) >2 {log}'
+        'minimap2 -ax asm5 --eqx {input.ref} {input.asm} > {output.sam} | samtools view -b -o {output.bam} >2 {log}'
 
 
 ## sv calling by software which based on reads alignment
@@ -162,9 +162,9 @@ rule pbsv_call:
         tdm='logs/{sample}-{aligner}-tandem.log.txt',
         sv='logs/{sample}-{aligner}.pbsv.log.txt',
     shell:
-        '(trf {input.ref} {params.para}) 2> {log.tdm}' \
-        '(pbsv discover {input.bam} --tandem-repeats {output.repeat} {output.svsig}) 2> {log.sv}' \
-        '(pbsv call --ccs -x {params.depth} {input.ref} {output.svsig} {output.vcf}) 2>> {log.sv}'
+        'trf {input.ref} {params.para} 2> {log.tdm}' \
+        'pbsv discover {input.bam} --tandem-repeats {output.repeat} {output.svsig} 2> {log.sv}' \
+        'pbsv call --ccs -x {params.depth} {input.ref} {output.svsig} {output.vcf} 2>> {log.sv}'
 
 # calling by SVIM
 rule SVIM_call:
@@ -180,38 +180,52 @@ rule SVIM_call:
         outdir='{sample}/SVIM'
     conda: "./evn/svim.yaml"
     shell:
-        '(svim alignment --sequence_alleles --read_names {input.ref} {input.bam} {params.outdir}/) 2> {log}' \
-        '(mv {params.outdir}/final_results.vcf {output})'
+        'svim alignment --sequence_alleles --read_names {input.ref} {input.bam} {params.outdir}/ 2> {log}' \
+        'mv {params.outdir}/final_results.vcf {output}'
 
 # calling by Sniffles
 if config['depth'] >= 30:
     rule Sniffles_call:
         input:
-            bam=expand('{sample}-{aligner}.sort.bam',sample=SAMPLES,aligner=['NGMLR','pbmm2'])
+            ref=expand('{genome}.fa',genome=REF),
+            pbmm2_bam='{sample}-pbmm2.sort.bam',
+            ngmlr_bam='{sample}-NGMLR.sort.bam'
         output:
-            '{sample}/Sniffles/{sample}-{aligner}.Sniffles.vcf'
+            pbmm2_MD='{sample}-pbmm2.sort.MD.bam',
+            vcf_ngmlr='{sample}/Sniffles/{sample}-NGMLR.Sniffles.vcf',
+            vcf_pbmm2='{sample}/Sniffles/{sample}-pbmm2.Sniffles.vcf'
         threads: 2
         log:
-            'logs/{sample}-{aligner}.Sniffles.log.txt'
+            log_ngmlr='logs/{sample}-NGMLR.Sniffles.log.txt',
+            log_pbmm2='logs/{sample}-pbmm2.Sniffles.log.txt'
         params:
-            para=int(config['depth'])/10
+            para=int(int(config['depth'])/10)
         conda: "./evn/sniffles.yaml"
         shell:
-            '(sniffles --skip_parameter_estimation -s {params.para} --ccs_reads -m {input} -v {output}) 2> {log}'
+            'samtools calmd -u {input.pbmm2_bam} {input.ref} > {output.pbmm2_MD}' \
+            'sniffles --skip_parameter_estimation -s {params.para} --ccs_reads -m {input.ngmlr_bam} -v {output.vcf_ngmlr} 2> {log.log_ngmlr}' \
+            'sniffles --skip_parameter_estimation -s {params.para} --ccs_reads -m {output.pbmm2_MD} -v {output.vcf_pbmm2} 2> {log.log_pbmm2}'
 else:
     rule Sniffles_call:
-        input:
-            bam=expand('{sample}-{aligner}.sort.bam',sample=SAMPLES,aligner=['NGMLR','pbmm2'])
+         input:
+            ref=expand('{genome}.fa',genome=REF),
+            pbmm2_bam='{sample}-pbmm2.sort.bam',
+            ngmlr_bam='{sample}-NGMLR.sort.bam'
         output:
-            '{sample}/Sniffles/{sample}-{aligner}.Sniffles.vcf'
+            pbmm2_MD='{sample}-pbmm2.sort.MD.bam',
+            vcf_ngmlr='{sample}/Sniffles/{sample}-NGMLR.Sniffles.vcf',
+            vcf_pbmm2='{sample}/Sniffles/{sample}-pbmm2.Sniffles.vcf'
         threads: 2
         log:
-            'logs/{sample}-{aligner}.Sniffles.log.txt'
+            log_ngmlr='logs/{sample}-NGMLR.Sniffles.log.txt',
+            log_pbmm2='logs/{sample}-pbmm2.Sniffles.log.txt'
         params:
             para=2
         conda: "./evn/sniffles.yaml"
         shell:
-            '(sniffles --skip_parameter_estimation -s {params.para} --ccs_reads -m {input} -v {output}) 2> {log}'
+            'samtools calmd -u {input.pbmm2_bam} {input.ref} > {output.pbmm2_MD}' \
+            'sniffles --skip_parameter_estimation -s {params.para} --ccs_reads -m {input.ngmlr_bam} -v {output.vcf_ngmlr} 2> {log.log_ngmlr}' \
+            'sniffles --skip_parameter_estimation -s {params.para} --ccs_reads -m {output.pbmm2_MD} -v {output.vcf_pbmm2} 2> {log.log_pbmm2}'
 # calling by cuteSV
 rule cuteSV_call:
     input:
@@ -228,7 +242,7 @@ rule cuteSV_call:
     conda: "./evn/cutesv.yaml"
     shell:
         'mkdir {params.work_dir}' \
-        '(cuteSV {input} {output} {params.work_dir} --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5 --threads {threads} --sample {wildcards.sample}-{params.map_name} --min_support 10 --genotype) 2> {log}'
+        'cuteSV {input} {output} {params.work_dir} --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5 --threads {threads} --sample {wildcards.sample}-{params.map_name} --min_support 10 --genotype 2> {log}'
 
 ## sv calling by software which based on genoem alignment
 # calling by Assemblytics
@@ -244,7 +258,7 @@ rule Assemblytics_call:
         name=config['reference']
     conda: "./evn/assemblytics.yaml"
     shell:
-        '(gzip {input} | scripts/Assemblytics {wildcards.sample}-{params.name} 10000 20 100000) 2> {log}' \
+        'gzip {input} | scripts/Assemblytics {wildcards.sample}-{params.name} 10000 20 100000 2> {log}' \
         'mv {wildcards.sample}-{params.name}/{wildcards.sample}-{params.name}.Assemblytics_structural_variants.bed {output}'
 # calling by SyRI
 rule SyRI_call:
@@ -265,7 +279,7 @@ rule SyRI_call:
     shell:
         'python ref_chr.py -i {input.ref} -o {output.ref_chr} -c {params.max_chr}' \
         'python asm_chr.py -i {input.asm} -o {output.asm_chr}' \
-        '(syri -c {input.bam} -r {output.ref_chr} -q {output.asm_chr} -k -F B --nosnp) 2> {log}' \
+        'syri -c {input.bam} -r {output.ref_chr} -q {output.asm_chr} -k -F B --nosnp 2> {log}' \
         'mv syri.vcf {output.vcf}'
 
 
@@ -297,8 +311,8 @@ rule INS_merge:
     threads: 1
     conda: "./evn/survivor.yaml"
     shell:
-        '(ls {input} > sample_files_ins)' \
-        '(SURVIVOR merge sample_files_ins 1000 1 1 1 0 20 {output}) 2> {log}'
+        'ls {input} > sample_files_ins' \
+        'SURVIVOR merge sample_files_ins 1000 1 1 1 0 20 {output} 2> {log}'
 
 ##
 # DEL detection: pbmm2+NGMLR-Sniffles; Assemblytics
